@@ -68,6 +68,18 @@ namespace ConvertColorApp
 
             // Đặt màu cho panelColor
             labelTitle.ForeColor = Color.FromArgb(r, g, b);
+           
+            tbRGBR.ThumbColor = Color.FromArgb(r, g, b);
+            tbRGBG.ThumbColor = Color.FromArgb(r, g, b);
+            tbRGBB.ThumbColor = Color.FromArgb(r, g, b);
+            tbCMYKC.ThumbColor = Color.FromArgb(r, g, b);
+            tbCMYKM.ThumbColor = Color.FromArgb(r, g, b);
+            tbCMYKY.ThumbColor = Color.FromArgb(r, g, b);
+            tbCMYKK.ThumbColor = Color.FromArgb(r, g, b);
+            tbHSVH.ThumbColor = Color.FromArgb(r, g, b);
+            tbHSVS.ThumbColor = Color.FromArgb(r, g, b);
+            tbHSVV.ThumbColor = Color.FromArgb(r, g, b);
+
             updatingValues = false;
         }
 
@@ -179,5 +191,24 @@ namespace ConvertColorApp
             // Gọi hàm cập nhật màu
             UpdateColorValues(false, false, true);
         }
+
+        private void btnCopyRGB_Click(object sender, EventArgs e)
+        {
+            string rgbValues = $"RGB({nudRGBR.Value}, {nudRGBG.Value}, {nudRGBB.Value})";
+            Clipboard.SetText(rgbValues);
+        }
+
+        private void btnCopyCMYK_Click(object sender, EventArgs e)
+        {
+            string cmykValues = $"CMYK({nudCMYKC.Value}%, {nudCMYKM.Value}%, {nudCMYKY.Value}%, {nudCMYKK.Value}%)";
+            Clipboard.SetText(cmykValues);
+        }
+
+        private void btnCopyHSV_Click(object sender, EventArgs e)
+        {
+            string hsvValues = $"HSV({nudHSVH.Value}, {nudHSVS.Value}%, {nudHSVV.Value}%)";
+            Clipboard.SetText(hsvValues);
+        }
+
     }
 }

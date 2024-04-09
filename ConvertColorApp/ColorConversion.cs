@@ -1,10 +1,10 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 
 namespace ConvertColorApp
 {
     public static class ColorConversion
     {
-        // Convert RGB to CMYK
         public static (int, int, int, int) RGBtoCMYK(int r, int g, int b)
         {
             float c = 1 - (float)r / 255;
@@ -27,44 +27,41 @@ namespace ConvertColorApp
             }
         }
 
-        // Convert RGB to HSV
+        /// <summary>
+        /// Chuyển đổi giá trị màu từ không gian màu RGB sang HSV.
+        /// </summary>
+        /// <param name="r">Giá trị màu đỏ (0-255).</param>
+        /// <param name="g">Giá trị màu xanh lá cây (0-255).</param>
+        /// <param name="b">Giá trị màu xanh dương (0-255).</param>
+        /// <returns>Tuple chứa giá trị Hue (0-360), Saturation (0-100) và Value (0-100) tương ứng.</returns>
         public static (int, int, int) RGBtoHSV(int r, int g, int b)
         {
-            float R = r / 255f;
-            float G = g / 255f;
-            float B = b / 255f;
-            float max = Math.Max(R, Math.Max(G, B));
-            float min = Math.Min(R, Math.Min(G, B));
-            float h = 0, s = 0, v = max;
+            // Tạo ma trận RGB từ các giá trị màu đầu vào
+            Mat rgbMat = new Mat(1, 1, MatType.CV_8UC3, new Scalar(b, g, r));
 
-            float delta = max - min;
-            if (max != 0)
-                s = delta / max;
+            // Tạo ma trận HSV để lưu trữ kết quả
+            Mat hsvMat = new Mat();
 
-            if (s == 0)
-                h = 0;
-            else
-            {
-                if (R == max)
-                    h = (G - B) / delta;
-                else if (G == max)
-                    h = 2 + (B - R) / delta;
-                else
-                    h = 4 + (R - G) / delta;
+            // Chuyển đổi không gian màu từ RGB sang HSV
+            Cv2.CvtColor(rgbMat, hsvMat, ColorConversionCodes.BGR2HSV);
 
-                h *= 60;
-                if (h < 0)
-                    h += 360;
-            }
+            // Lấy giá trị màu HSV từ ma trận kết quả
+            Vec3b hsv = hsvMat.At<Vec3b>(0, 0);
 
-            h = (float)Math.Round(h);
-            s = (float)Math.Round(s * 100);
-            v = (float)Math.Round(v * 100);
+            // Chia giá trị Hue cho 179 và nhân với 360 để chuyển từ 0-179 sang 0-360
+            int hue = (int)((hsv.Item0 / 179.0) * 360.0);
 
-            return ((int)h, (int)s, (int)v);
+            // Chia giá trị Saturation cho 255 và nhân với 100 để chuyển từ 0-255 sang 0-100
+            int saturation = (int)((hsv.Item1 / 255.0) * 100.0);
+
+            // Chia giá trị Value cho 255 và nhân với 100 để chuyển từ 0-255 sang 0-100
+            int value = (int)((hsv.Item2 / 255.0) * 100.0);
+
+            // Trả về tuple chứa giá trị Hue, Saturation và Value
+            return (hue, saturation, value);
         }
 
-        // Convert CMYK to RGB
+
         public static (int, int, int) CMYKtoRGB(int c, int m, int y, int k)
         {
             c = (int)((1 - Math.Min(1, c / 100f * (1 - k / 100f) + k / 100f)) * 255);
@@ -74,77 +71,61 @@ namespace ConvertColorApp
             return (c, m, y);
         }
 
-        // Convert CMYK to HSV
+   
         public static (int, int, int) CMYKtoHSV(int c, int m, int y, int k)
         {
-            // Convert CMYK to RGB first
+       
             var rgb = CMYKtoRGB(c, m, y, k);
 
-            // Then convert RGB to HSV
+         
             return RGBtoHSV(rgb.Item1, rgb.Item2, rgb.Item3);
         }
 
-        // Convert HSV to RGB
-        public static(int, int, int) HSVtoRGB(int H, int S, int V)
+
+        /// <summary>
+        /// Chuyển đổi giá trị màu từ không gian màu HSV sang RGB.
+        /// </summary>
+        /// <param name="H">Giá trị Hue (0-360).</param>
+        /// <param name="S">Giá trị Saturation (0-100).</param>
+        /// <param name="V">Giá trị Value (0-100).</param>
+        /// <returns>Tuple chứa giá trị màu RGB tương ứng.</returns>
+        public static (int, int, int) HSVtoRGB(int H, int S, int V)
         {
+            // Kiểm tra xem giá trị HSV có nằm trong phạm vi hợp lệ không
             if (H > 360 || H < 0 || S > 100 || S < 0 || V > 100 || V < 0)
             {
-                Console.WriteLine("The given HSV values are not in valid range");
+                Console.WriteLine("Các giá trị HSV không nằm trong phạm vi hợp lệ");
                 return (0, 0, 0);
             }
 
-            float s = S / 100f;
-            float v = V / 100f;
-            float C = s * v;
-            float X = C * (1 - Math.Abs((H / 60f) % 2 - 1));
-            float m = v - C;
-            float r = 0, g = 0, b = 0;
+            // Chuyển đổi giá trị HSV về phạm vi của OpenCV
+            float h = H / 2.0f; // Scale hue from 0-360 to 0-180
+            float s = S * 2.55f; // Scale saturation from 0-100 to 0-255
+            float v = V * 2.55f; // Scale value from 0-100 to 0-255
 
-            if (H >= 0 && H < 60)
-            {
-                r = C;
-                g = X;
-            }
-            else if (H >= 60 && H < 120)
-            {
-                r = X;
-                g = C;
-            }
-            else if (H >= 120 && H < 180)
-            {
-                g = C;
-                b = X;
-            }
-            else if (H >= 180 && H < 240)
-            {
-                g = X;
-                b = C;
-            }
-            else if (H >= 240 && H < 300)
-            {
-                r = X;
-                b = C;
-            }
-            else if (H >= 300 && H < 360)
-            {
-                r = C;
-                b = X;
-            }
+            // Tạo ma trận HSV từ các giá trị màu đầu vào
+            Mat hsvMat = new Mat(1, 1, MatType.CV_8UC3, new Scalar(h, s, v));
 
-            int R = (int)((r + m) * 255);
-            int G = (int)((g + m) * 255);
-            int B = (int)((b + m) * 255);
+            // Tạo ma trận RGB để lưu trữ kết quả
+            Mat rgbMat = new Mat();
 
-            return (R, G, B);
+            // Chuyển đổi không gian màu từ HSV sang RGB
+            Cv2.CvtColor(hsvMat, rgbMat, ColorConversionCodes.HSV2BGR);
+
+            // Lấy giá trị màu RGB từ ma trận kết quả
+            Vec3b rgb = rgbMat.At<Vec3b>(0, 0);
+
+            // Trả về tuple chứa giá trị màu RGB
+            return (rgb.Item2, rgb.Item1, rgb.Item0); // OpenCV sử dụng BGR thay vì RGB
         }
 
-        // Convert HSV to CMYK
+
+
+
         public static (int, int, int, int) HSVtoCMYK(int h, int s, int v)
         {
-            // Convert HSV to RGB first
             var rgb = HSVtoRGB(h, s, v);
 
-            // Then convert RGB to CMYK
             return RGBtoCMYK(rgb.Item1, rgb.Item2, rgb.Item3);
         }
     }
